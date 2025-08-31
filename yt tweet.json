@@ -1,0 +1,978 @@
+{
+  "name": "yt tweet",
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1QRn8OsuTtJ3evKNQLTU9LJ9bj67GWiykpChDrqZa1Iw",
+          "mode": "list",
+          "cachedResultName": "Links",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QRn8OsuTtJ3evKNQLTU9LJ9bj67GWiykpChDrqZa1Iw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QRn8OsuTtJ3evKNQLTU9LJ9bj67GWiykpChDrqZa1Iw/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "e8368c06-5bd1-4567-851e-e7cf23d1006d",
+      "name": "gathering data",
+      "notesInFlow": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zHrZu3nmYO5nVypP",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "notes": "trigger started"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// This node runs ONCE PER ROW (\"Run Once for Each Item\")\n\nconst url = $json[\"URL\"] || $json[\"url\"] || $json[\"Url\"];\nlet videoId = null;\nconst upstatus = $json['upstatus']||\"\";\nlet status = 'invalid';\n\n\n// --- Extract videoId ---\nif (url) {\n  if (url.includes(\"youtu.be/\")) {\n    videoId = url.split(\"youtu.be/\")[1].split(/[?&]/)[0];\n  } else if (url.includes(\"watch?v=\")) {\n    videoId = url.split(\"watch?v=\")[1].split(/[?&]/)[0];\n  } else {\n    const m = url.match(/(v=|\\/v\\/|\\/embed\\/)([A-Za-z0-9_-]{6,})/);\n    if (m && m[2]) videoId = m[2];\n  }\n}\n\n// --- Deduplication check (per workflow run, not deleting anything) ---\nif (videoId) {\n  const store = $getWorkflowStaticData(\"global\");\n\n  if (!store.seen) store.seen = {};\n\n  if (store.seen[videoId]) {\n    status = \"Duplicate\";  // already seen\n  } else {\n    status = \"New\";        // first time\n    store.seen[videoId] = true;\n  }\n}\n\n// --- Return row with videoId + status ---\nreturn {\n  json: {\n    ...$json,\n    videoId,\n    status,\n    upstatus\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "f62825bf-be77-4e32-8dcf-879981947541",
+      "name": "Spliting video id from url"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "24a31ead-f289-4e2d-84e6-659b4677349d",
+              "leftValue": "={{ $json['upstatus'] }}",
+              "rightValue": "uploaded",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "098488e2-b231-4d92-8c16-42b4f682d4e9",
+      "name": "check if already uploded"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1QRn8OsuTtJ3evKNQLTU9LJ9bj67GWiykpChDrqZa1Iw",
+          "mode": "list",
+          "cachedResultName": "Links",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QRn8OsuTtJ3evKNQLTU9LJ9bj67GWiykpChDrqZa1Iw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QRn8OsuTtJ3evKNQLTU9LJ9bj67GWiykpChDrqZa1Iw/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "URL",
+              "displayName": "URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        832,
+        0
+      ],
+      "id": "854dfa01-c459-461d-a873-e37ab1aa2fcd",
+      "name": "updating row",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zHrZu3nmYO5nVypP",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Run Once for Each Item\n\n// Only keep rows with status === \"New\"\nreturn items.filter(item => {\n  return item.json.status === \"New\";\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "38e5387e-958b-419a-bf00-322f8a085936",
+      "name": "filtering data"
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/youtube/v3/videos",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "={{ $json['videoId'] }}"
+            },
+            {
+              "name": "part",
+              "value": "snippet, status"
+            },
+            {
+              "name": "key",
+              "value": "AIzaSyCA__qOFFvEJEp5V9Lk-s6Lt60ww4cKOdw"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1248,
+        0
+      ],
+      "id": "72420152-866f-4f10-82f4-70587025284d",
+      "name": "requesting youtube data"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Input: expects `videoId` from earlier node\nconst data = $json;\nconst number = $json.row_number;\n\n// If YouTube API returned empty (invalid/deleted video)\nif (!data.items || data.items.length === 0) {\n  return {\n    videoId: $json.videoId,   // keep original ID\n    status: \"Invalid\",\n    privacy: \"Private\",\n    title: null\n  };\n}\n\n// Take first video result\nconst video = data.items[0];\nconst privacy = video.status.privacyStatus;\n\nlet status = \"Ready\"; // default\nif (privacy === \"private\") {\n  status = \"Private\";\n} else if (privacy === \"unlisted\") {\n  status = \"Unlisted\";\n} else if (privacy === \"public\") {\n  status = \"Ready\";\n}\n\nreturn {\n  videoId: video.id,\n  title: video.snippet.title,\n  channel: video.snippet.channelTitle,\n  tags: video.snippet.tags,\n  number,\n  privacy,\n  status\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1456,
+        0
+      ],
+      "id": "c5cfe2db-b1a2-4983-88c7-9bbb5ec5eb33",
+      "name": "cheks video status"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1QRn8OsuTtJ3evKNQLTU9LJ9bj67GWiykpChDrqZa1Iw",
+          "mode": "list",
+          "cachedResultName": "Links",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QRn8OsuTtJ3evKNQLTU9LJ9bj67GWiykpChDrqZa1Iw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QRn8OsuTtJ3evKNQLTU9LJ9bj67GWiykpChDrqZa1Iw/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "videoId"
+          ],
+          "schema": [
+            {
+              "id": "URL",
+              "displayName": "URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "videoId",
+              "displayName": "videoId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "privacy",
+              "displayName": "privacy",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "shortLink",
+              "displayName": "shortLink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tags",
+              "displayName": "tags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1664,
+        0
+      ],
+      "id": "1a780ece-8b5a-4f35-b201-7591a7a0a7a7",
+      "name": "updating row1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zHrZu3nmYO5nVypP",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const privacy = $json.privacy || \"invalid\";\n\n// Add a flag for public videos\nconst proceed = (privacy === \"public\");\n\nreturn {\n  json: {\n    ...$json,\n    proceed // true = send to next node, false = skip\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1872,
+        0
+      ],
+      "id": "ecb3aaad-9167-4724-9a03-d579525d0e83",
+      "name": "set flag"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "eb60f1db-2f51-458c-8e32-fce7c484f20c",
+              "leftValue": "={{ $json['proceed'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2080,
+        0
+      ],
+      "id": "ed01b99c-9e2f-4c3c-98b4-aa294e0d7c2b",
+      "name": "filter private and public"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api-ssl.bitly.com/v4/shorten",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 2b0038e769f443bfd9d349177c9051b2a3ca03cf"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "long_url",
+              "value": "={{ $('filtering data').item.json.URL }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2496,
+        0
+      ],
+      "id": "eea6e999-d53a-401e-9229-140a731cbd35",
+      "name": "link shortening",
+      "executeOnce": true,
+      "retryOnFail": false
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1QRn8OsuTtJ3evKNQLTU9LJ9bj67GWiykpChDrqZa1Iw",
+          "mode": "list",
+          "cachedResultName": "Links",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QRn8OsuTtJ3evKNQLTU9LJ9bj67GWiykpChDrqZa1Iw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QRn8OsuTtJ3evKNQLTU9LJ9bj67GWiykpChDrqZa1Iw/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "URL": "={{ $json.long_url }}",
+            "shortLink": "={{ $json.link }}"
+          },
+          "matchingColumns": [
+            "URL"
+          ],
+          "schema": [
+            {
+              "id": "URL",
+              "displayName": "URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "videoId",
+              "displayName": "videoId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "privacy",
+              "displayName": "privacy",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "shortLink",
+              "displayName": "shortLink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2704,
+        0
+      ],
+      "id": "e224150b-80ed-4860-bd08-e254760ecfb3",
+      "name": "updating row with shorten link",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zHrZu3nmYO5nVypP",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1QRn8OsuTtJ3evKNQLTU9LJ9bj67GWiykpChDrqZa1Iw",
+          "mode": "list",
+          "cachedResultName": "Links",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QRn8OsuTtJ3evKNQLTU9LJ9bj67GWiykpChDrqZa1Iw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QRn8OsuTtJ3evKNQLTU9LJ9bj67GWiykpChDrqZa1Iw/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "privacy",
+              "lookupValue": "public"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2912,
+        0
+      ],
+      "id": "207fb81c-fa9f-444e-96df-a24ddd604a0d",
+      "name": "gathering filtered data",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zHrZu3nmYO5nVypP",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Each row from Google Sheet\nconst url = $json[\"shortLink\"];\nconst videoId = $json[\"videoId\"];\nconst title = $json[\"title\"] || \"\";\nlet tags = $json[\"tags\"] || \"\";\nconst status = $json[\"status\"];\nconst privacy = $json[\"privacy\"];\nconst rowNumber = $json[\"_row\"] || $json[\"row_number\"] || null;\n\n// --- Only process public & ready videos ---\nconst proceed = (status === \"Ready\" && privacy === \"public\");\n\n// --- Format tags: prepend # to each tag, remove internal spaces ---\nlet formattedTags = [];\nif (tags) {\n  if (typeof tags === \"string\") {\n    // Clean brackets/quotes if present\n    tags = tags.replace(/[\\[\\]\"]/g, \"\");\n    tags = tags.split(\",\").map(tag => tag.trim());\n  }\n  // Remove internal spaces inside each tag and prepend #\n  formattedTags = tags.map(tag => `#${tag.replace(/\\s+/g, '')}`); // array of hashtags\n}\n\n// --- Calculate total length ---\nlet tweetText = `${title}${url}${formattedTags.join(\" \")}`;\nconst maxLength = 250; // leave 30 chars buffer for safety (Twitter limit 280)\n\nif (tweetText.length > maxLength) {\n  \n  while (formattedTags.length > 0 && tweetText.length > maxLength) {\n    formattedTags.pop(); \n    tweetText = `${title}${url}${formattedTags.join(\" \")}`;\n  }\n}\n\n// --- Return final object ---\nreturn {\n  json: {\n    url,\n    title,\n    formattedTags: formattedTags.join(\" \"), // final tags string\n    proceed,\n    rowNumber,\n    tweetText\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        0
+      ],
+      "id": "d396bc4d-3a1b-49f1-9dfa-2c97d7397380",
+      "name": "saves data to be upload"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1QRn8OsuTtJ3evKNQLTU9LJ9bj67GWiykpChDrqZa1Iw",
+          "mode": "list",
+          "cachedResultName": "Links",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QRn8OsuTtJ3evKNQLTU9LJ9bj67GWiykpChDrqZa1Iw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QRn8OsuTtJ3evKNQLTU9LJ9bj67GWiykpChDrqZa1Iw/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $json['rowNumber'] }}",
+            "status": "",
+            "upstatus": "uploaded"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "URL",
+              "displayName": "URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "shortLink",
+              "displayName": "shortLink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "videoId",
+              "displayName": "videoId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "privacy",
+              "displayName": "privacy",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "upstatus",
+              "displayName": "upstatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3328,
+        0
+      ],
+      "id": "0c2e72c9-dfa7-4224-ad2a-a15feba5403d",
+      "name": "updating uploaded status",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zHrZu3nmYO5nVypP",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "={{ $('saves data to be upload').item.json.tweetText }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.twitter",
+      "typeVersion": 2,
+      "position": [
+        3600,
+        0
+      ],
+      "id": "949025e7-5ec9-4356-bf2f-830c646ae5b8",
+      "name": "tweet",
+      "executeOnce": true,
+      "alwaysOutputData": false,
+      "credentials": {
+        "twitterOAuth2Api": {
+          "id": "mwicmTukFx7ABIME",
+          "name": "X account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "34ea27e4-d5b6-423e-bb15-7f0f08882547",
+      "name": "trigger 5min"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "gathering data": {
+      "main": [
+        [
+          {
+            "node": "Spliting video id from url",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Spliting video id from url": {
+      "main": [
+        [
+          {
+            "node": "check if already uploded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check if already uploded": {
+      "main": [
+        [
+          {
+            "node": "updating row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "updating row": {
+      "main": [
+        [
+          {
+            "node": "filtering data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "filtering data": {
+      "main": [
+        [
+          {
+            "node": "requesting youtube data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "requesting youtube data": {
+      "main": [
+        [
+          {
+            "node": "cheks video status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "cheks video status": {
+      "main": [
+        [
+          {
+            "node": "updating row1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "updating row1": {
+      "main": [
+        [
+          {
+            "node": "set flag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set flag": {
+      "main": [
+        [
+          {
+            "node": "filter private and public",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "filter private and public": {
+      "main": [
+        [
+          {
+            "node": "link shortening",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "link shortening": {
+      "main": [
+        [
+          {
+            "node": "updating row with shorten link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "updating row with shorten link": {
+      "main": [
+        [
+          {
+            "node": "gathering filtered data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gathering filtered data": {
+      "main": [
+        [
+          {
+            "node": "saves data to be upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "saves data to be upload": {
+      "main": [
+        [
+          {
+            "node": "updating uploaded status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "updating uploaded status": {
+      "main": [
+        [
+          {
+            "node": "tweet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tweet": {
+      "main": [
+        []
+      ]
+    },
+    "trigger 5min": {
+      "main": [
+        [
+          {
+            "node": "gathering data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e590d070-1a73-4058-85b2-8f87726d4701",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2d4190d4cd2ca045de82e1c430d01cca5017739686e9355b8de66d21f800622b"
+  },
+  "id": "j8mQgIHFP0K5HqSm",
+  "tags": []
+}
